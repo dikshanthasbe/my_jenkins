@@ -654,24 +654,8 @@ def render_enhanced_visualizations(df, total_filtered_items, total_items):
 
 
 def render_enhanced_data_table(df, total_filtered_items):
-    """Render enhanced data table with modern styling and integrated pagination"""
-    # Enhanced pagination controls with modern styling
-    total_pages = (total_filtered_items + DashboardConfig.ITEMS_PER_PAGE_DEFAULT - 1) // DashboardConfig.ITEMS_PER_PAGE_DEFAULT
-    
-    if total_pages > 1:
-        current_page = 1
-    else:
-        current_page = 1
-    
-    start_idx = (current_page - 1) * DashboardConfig.ITEMS_PER_PAGE_DEFAULT
-    end_idx = start_idx + DashboardConfig.ITEMS_PER_PAGE_DEFAULT
-    paginated_df = df.iloc[start_idx:end_idx]
-    
-    # Summary info with modern styling
-    start_item = (current_page - 1) * DashboardConfig.ITEMS_PER_PAGE_DEFAULT + 1
-    end_item = min(current_page * DashboardConfig.ITEMS_PER_PAGE_DEFAULT, total_filtered_items)
-    
-    if not paginated_df.empty:
+    """Render enhanced data table with modern styling (no pagination)"""
+    if not df.empty:
         # Enhanced dataframe with modern styling
         st.markdown("""
         <div class="section-header">
@@ -679,71 +663,17 @@ def render_enhanced_data_table(df, total_filtered_items):
         </div>
         """, unsafe_allow_html=True)
         
-        # Items per page and page controls side by side
-        col1, col2, col3, col4 = st.columns([0.2, 0.15, 0.1, 0.55])
-        with col1:
-            items_per_page = st.selectbox("📄 Items per page", [25, 50, 100, 200], 
-                                        index=[25, 50, 100, 200].index(DashboardConfig.ITEMS_PER_PAGE_DEFAULT))
-        
-        # Page changing controls (only show if multiple pages)
-        if total_pages > 1:
-            with col2:
-                current_page = st.selectbox(f"📄 Page", range(1, total_pages + 1), index=0)
-            with col3:
-                st.write(f"of {total_pages}")
-            with col4:
-                st.write("")  # Empty space for balance
-        else:
-            with col2:
-                st.write("")  # Empty space when no pagination needed
-            with col3:
-                st.write("")
-            with col4:
-                st.write("")
-        
-        # Recalculate pagination after page selection
-        start_idx = (current_page - 1) * items_per_page
-        end_idx = start_idx + items_per_page
-        paginated_df = df.iloc[start_idx:end_idx]
-        start_item = (current_page - 1) * items_per_page + 1
-        end_item = min(current_page * items_per_page, total_filtered_items)
-        
-        st.info(f"Showing {start_item}-{end_item} of {total_filtered_items} jobs")
+        # Show total count
+        st.info(f"Showing all {total_filtered_items} jobs")
         
         # Select only the columns we want to display (Overview tab - core fields only)
         display_columns = [
             "name", "folder", "owner_name", "owner_email", "description", "last_build_status", "success_rate",
-            "days_since_last_build", "total_builds", "last_editor", "last_user", "url"
+            "days_since_last_build", "total_builds", "last_user", "last_editor", "url"
         ]
         
-        # Filter dataframe to only show selected columns (handle missing columns gracefully)
-        available_display_columns = [col for col in display_columns if col in paginated_df.columns]
-        display_df = paginated_df[available_display_columns].copy()
-        
-        # Add missing columns with default values if they don't exist
-        missing_columns = []
-        for col in display_columns:
-            if col not in display_df.columns:
-                if col == "last_editor":
-                    display_df[col] = None  # Will show as empty cells
-                    missing_columns.append("Last Editor")
-                elif col == "last_user":
-                    display_df[col] = None  # Will show as empty cells
-                    missing_columns.append("Last User")
-                else:
-                    display_df[col] = None
-        
-        # Show information message if new columns were missing
-        if missing_columns:
-            if len(missing_columns) == 1:
-                feature_name = missing_columns[0]
-                if feature_name == "Last Editor":
-                    st.info("💡 **New Feature Available**: The 'Last Editor' column is now available! Click the '🔄' sync button above to refresh data from Jenkins and see who last modified each job.")
-                elif feature_name == "Last User":
-                    st.info("💡 **New Feature Available**: The 'Last User' column is now available! Click the '🔄' sync button above to refresh data from Jenkins and see who started each job's last build.")
-            else:
-                features = " and ".join(missing_columns)
-                st.info(f"💡 **New Features Available**: The '{features}' columns are now available! Click the '🔄' sync button above to refresh data from Jenkins and see the latest user information.")
+        # Filter dataframe to only show selected columns
+        display_df = df[display_columns].copy()
         
         # Enhanced dataframe with cleaner columns and modern styling
         st.dataframe(
@@ -787,14 +717,14 @@ def render_enhanced_data_table(df, total_filtered_items):
                     format="%d",
                     help="Total number of builds for this job"
                 ),
-                "last_editor": st.column_config.TextColumn(
-                    "👨‍💻 Last Editor",
-                    help="User who last modified the job configuration",
+                "last_user": st.column_config.TextColumn(
+                    "👤 Last User",
+                    help="User who triggered the last build",
                     max_chars=50
                 ),
-                "last_user": st.column_config.TextColumn(
-                    "🚀 Last User",
-                    help="User who started/triggered the last build",
+                "last_editor": st.column_config.TextColumn(
+                    "✏️ Last Editor",
+                    help="User who last modified the job configuration",
                     max_chars=50
                 ),
             },
@@ -857,12 +787,14 @@ def render_test_jobs_section(df):
         )
         
         st.dataframe(
-            test_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "recommendation", "url"]],
+            test_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "last_user", "last_editor", "recommendation", "url"]],
             column_config={
                 "url": st.column_config.LinkColumn("Job URL"),
                 "description": st.column_config.TextColumn("Description", max_chars=80),
                 "days_since_last_build": st.column_config.NumberColumn("Days Since Last Build", format="%d"),
                 "total_builds": st.column_config.NumberColumn("Total Builds", format="%d"),
+                "last_user": st.column_config.TextColumn("👤 Last User", help="User who triggered the last build", max_chars=50),
+                "last_editor": st.column_config.TextColumn("✏️ Last Editor", help="User who last modified the job configuration", max_chars=50),
             },
             use_container_width=True,
         )
@@ -906,12 +838,14 @@ def render_inactive_jobs_section(df):
         inactive_jobs = inactive_jobs.sort_values("days_since_last_build", ascending=False)
         
         st.dataframe(
-            inactive_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "recommendation", "url"]],
+            inactive_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "last_user", "last_editor", "recommendation", "url"]],
             column_config={
                 "url": st.column_config.LinkColumn("Job URL"),
                 "description": st.column_config.TextColumn("Description", max_chars=80),
                 "days_since_last_build": st.column_config.NumberColumn("Days Since Last Build", format="%d"),
                 "total_builds": st.column_config.NumberColumn("Total Builds", format="%d"),
+                "last_user": st.column_config.TextColumn("👤 Last User", help="User who triggered the last build", max_chars=50),
+                "last_editor": st.column_config.TextColumn("✏️ Last Editor", help="User who last modified the job configuration", max_chars=50),
             },
             use_container_width=True,
         )
@@ -948,12 +882,14 @@ def render_disabled_jobs_section(df):
         )
         
         st.dataframe(
-            disabled_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "recommendation", "url"]],
+            disabled_jobs[["name", "folder", "description", "last_build_status", "days_since_last_build", "total_builds", "last_user", "last_editor", "recommendation", "url"]],
             column_config={
                 "url": st.column_config.LinkColumn("Job URL"),
                 "description": st.column_config.TextColumn("Description", max_chars=80),
                 "days_since_last_build": st.column_config.NumberColumn("Days Since Last Build", format="%d"),
                 "total_builds": st.column_config.NumberColumn("Total Builds", format="%d"),
+                "last_user": st.column_config.TextColumn("👤 Last User", help="User who triggered the last build", max_chars=50),
+                "last_editor": st.column_config.TextColumn("✏️ Last Editor", help="User who last modified the job configuration", max_chars=50),
             },
             use_container_width=True,
         )
@@ -1073,7 +1009,7 @@ def render_cleanup_summary(df):
     
     # Create cleanup progress chart
     categories = ['Test Jobs', 'Inactive Jobs', 'Disabled Jobs', 'Active Jobs']
-    values = [len(test_jobs), len(inactive_jobs), len(disabled_jobs),
+    values = [len(test_jobs), len(inactive_jobs), len(disabled_jobs), 
               len(df) - len(test_jobs) - len(inactive_jobs) - len(disabled_jobs)]
     colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#10b981']
     

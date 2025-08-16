@@ -36,8 +36,9 @@ CREATE TABLE IF NOT EXISTS jenkins_items (
     owner_email VARCHAR(200),
     other_tag VARCHAR(200),
     ownership_status VARCHAR(20) DEFAULT 'unassigned',
-    last_editor VARCHAR(200),
+    -- User tracking columns
     last_user VARCHAR(200),
+    last_editor VARCHAR(200),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -54,8 +55,9 @@ CREATE INDEX IF NOT EXISTS idx_jenkins_items_owner_name ON jenkins_items(owner_n
 CREATE INDEX IF NOT EXISTS idx_jenkins_items_owner_email ON jenkins_items(owner_email);
 CREATE INDEX IF NOT EXISTS idx_jenkins_items_other_tag ON jenkins_items(other_tag);
 CREATE INDEX IF NOT EXISTS idx_jenkins_items_ownership_status ON jenkins_items(ownership_status);
-CREATE INDEX IF NOT EXISTS idx_jenkins_items_last_editor ON jenkins_items(last_editor);
+-- User tracking indexes
 CREATE INDEX IF NOT EXISTS idx_jenkins_items_last_user ON jenkins_items(last_user);
+CREATE INDEX IF NOT EXISTS idx_jenkins_items_last_editor ON jenkins_items(last_editor);
 
 -- Create a function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

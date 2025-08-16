@@ -91,6 +91,60 @@ Jenkins_Dashboard/
 - **pgAdmin**: Access at http://localhost:8080 (admin@jenkins-dashboard.com / admin_password_2024)
 - **Direct access**: `docker exec jenkins_dashboard_db psql -U jenkins_user -d jenkins_dashboard`
 
+## Testing Connectivity
+
+Before running the full application, you can test your Jenkins connectivity to ensure everything is configured correctly.
+
+### Connectivity Test Script
+
+The project includes a connectivity test script that verifies:
+- **Basic connectivity** to your Jenkins server
+- **Authentication** with your credentials
+- **User information** retrieval
+- **JobConfigHistory plugin** availability (for "Last Editor" functionality)
+
+#### Run the Test:
+
+```bash
+# Test connectivity before running the app
+uv run python test_connectivity.py
+```
+
+#### Expected Output:
+
+```
+🔍 Testing Jenkins Connectivity...
+==================================================
+📍 Jenkins URL: http://your-jenkins.com:8080
+👤 Username: your-username
+🔑 Token: ********...
+
+1️⃣ Testing basic connectivity with authentication...
+✅ Basic connectivity: SUCCESS
+   📊 Jenkins Version: 2.176.1
+   🏗️  Total Jobs: 450
+
+2️⃣ Testing user information...
+✅ User info: SUCCESS
+   👤 Full Name: Your Full Name
+   📧 Email: your.email@company.com
+
+3️⃣ Testing JobConfigHistory plugin...
+✅ JobConfigHistory plugin: AVAILABLE
+   ✏️ Last Editor functionality will work
+
+==================================================
+🎉 Connectivity test completed!
+✅ Your Jenkins is ready for the dashboard!
+🚀 You can now run: uv run streamlit run main.py
+```
+
+#### Troubleshooting:
+
+- **Connection errors**: Check your Jenkins URL and network connectivity
+- **Authentication failures**: Verify your username and API token
+- **Missing JobConfigHistory**: The "Last Editor" column will show fallback data
+
 ```
 
 ## Key Features Explained
