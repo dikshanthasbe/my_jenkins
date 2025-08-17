@@ -19,7 +19,9 @@
     "@heroicons/react": "^2.1.5",
     "recharts": "^2.12.7",
     "clsx": "^2.1.1",
-    "date-fns": "^3.6.0"
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.39.0",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
