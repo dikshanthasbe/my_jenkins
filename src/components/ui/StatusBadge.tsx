@@ -1,5 +1,5 @@
 import { cn, getStatusColor } from '../../lib/utils';
-import { BuildStatus } from '../../types/jenkins';
+import type { BuildStatus } from '../../types/jenkins';
 
 interface StatusBadgeProps {
   status: BuildStatus;
