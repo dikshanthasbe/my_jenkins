@@ -6,6 +6,133 @@ from src.config import DashboardConfig
 import re
 
 
+def get_job_config_history(job_url, auth):
+    """
+    Get the last editor from JobConfigHistory plugin.
+    
+    Args:
+        job_url (str): Job URL
+        auth: Authentication object
+        
+    Returns:
+        str: User ID/name who last modified the job configuration or None if not found
+    """
+    try:
+        # Try JobConfigHistory API first
+        config_history_url = f"{job_url.rstrip('/')}/jobConfigHistory/api/json?tree=jobConfigHistory[0][user]"
+        response = requests.get(config_history_url, auth=auth, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            job_config_history = data.get("jobConfigHistory", [])
+            if job_config_history and len(job_config_history) > 0:
+                latest_change = job_config_history[0]  # Most recent change
+                user = latest_change.get("user")
+                if user:
+                    return user
+    except (requests.exceptions.RequestException, KeyError, IndexError):
+        # JobConfigHistory plugin not available or other error, fallback to build data
+        pass
+    
+    return None
+
+
+def extract_user_from_build(build):
+    """
+    Extract the user who triggered the build from build actions.
+    Looks for various causes that indicate who triggered the build.
+    """
+    if not build or not build.get("actions"):
+        return "Unknown"
+    
+    actions = build.get("actions", [])
+    
+    for action in actions:
+        # Check for causes that indicate user triggers
+        if action.get("_class") == "hudson.model.CauseAction":
+            causes = action.get("causes", [])
+            for cause in causes:
+                # User ID cause (manual trigger)
+                if cause.get("_class") == "hudson.model.Cause$UserIdCause":
+                    user_id = cause.get("userId")
+                    if user_id:
+                        return user_id
+                
+                # User cause (legacy format)
+                if cause.get("_class") == "hudson.model.Cause$UserCause":
+                    user_name = cause.get("userName")
+                    if user_name:
+                        return user_name
+                
+                # SCM cause (git commit)
+                if cause.get("_class") == "hudson.triggers.SCMTrigger$SCMTriggerCause":
+                    user_name = cause.get("userName")
+                    if user_name:
+                        return user_name
+                
+                # Upstream cause
+                if cause.get("_class") == "hudson.model.Cause$UpstreamCause":
+                    # Try to get user from upstream build
+                    upstream_build = cause.get("upstreamBuild")
+                    if upstream_build:
+                        return f"Upstream Build #{upstream_build}"
+    
+    return "System/Unknown"
+
+
+def extract_editor_from_job(job, auth=None):
+    """
+    Extract information about who last modified the job configuration.
+    Uses JobConfigHistory plugin API for accurate results.
+    """
+    if not job:
+        return "Unknown"
+    
+    job_url = job.get("url")
+    if not job_url or not auth:
+        return "Unknown"
+    
+    # Try JobConfigHistory plugin first (most accurate)
+    last_editor = get_job_config_history(job_url, auth)
+    if last_editor:
+        return last_editor
+    
+    # Fallback: try to get from build data
+    last_build = job.get("lastBuild")
+    if last_build:
+        # Try to get user from build causes (user who triggered the build)
+        actions = last_build.get("actions", [])
+        for action in actions:
+            if isinstance(action, dict) and "causes" in action:
+                causes = action.get("causes", [])
+                for cause in causes:
+                    if isinstance(cause, dict):
+                        # Check for userId first (more reliable)
+                        user_id = cause.get("userId")
+                        if user_id:
+                            return user_id
+                        # Fallback to userName
+                        user_name = cause.get("userName")
+                        if user_name:
+                            return user_name
+        
+        # Try to get user from changeset (commit author)
+        changeset = last_build.get("changeSet", {})
+        if isinstance(changeset, dict):
+            items = changeset.get("items", [])
+            if items and len(items) > 0:
+                # Get the first commit author
+                first_item = items[0]
+                if isinstance(first_item, dict):
+                    author = first_item.get("author", {})
+                    if isinstance(author, dict):
+                        author_name = author.get("fullName")
+                        if author_name:
+                            return author_name
+    
+    return "System/Unknown"
+
+
 def extract_folder_from_url(url):
     try:
         path = url.split("/job/")[1:]
@@ -38,25 +165,37 @@ def is_test_job(job_name):
     return False
 
 
-@st.cache_data(show_spinner=False)
-def get_all_jenkins_items(url, _auth, _bypass_cache=False):
+def get_all_jenkins_items(url, _auth):
     items = []
+    print(f"🔄 Starting data sync from: {url}")
+    
     # Enhanced API call to get more detailed information including build duration, description, and user info
     api_url = (
         f"{url.rstrip('/')}/api/json?tree=jobs[name,url,_class,description,lastBuild[result,url,timestamp,duration,actions[causes[userId,userName]],changeSet[items[author[fullName]]]],"
         f"lastSuccessfulBuild[timestamp,duration],lastFailedBuild[timestamp,duration],"
-        f"builds[timestamp,result,duration],property[parameterDefinitions[name,defaultParameterValue[value]]],buildable,color]"
+        f"builds[timestamp,result,duration,actions[causes[userId,userName]]],property[parameterDefinitions[name,defaultParameterValue[value]]],buildable,color,"
+        f"actions[*],property[*]]"
     )
     try:
+        print("📡 Fetching initial job list...")
         response = requests.get(api_url, auth=_auth)
         response.raise_for_status()
         data = response.json()
+        total_jobs = len(data.get("jobs", []))
+        print(f"📊 Found {total_jobs} jobs to process")
+        
+        processed_count = 0
         for job in data.get("jobs", []):
             job_url = job.get("url")
             job_class = job.get("_class")
             if "folder" in job_class.lower():
+                print(f"📁 Processing folder: {job.get('name', 'Unknown')}")
                 items.extend(get_all_jenkins_items(job_url, _auth))
             else:
+                processed_count += 1
+                if processed_count % 50 == 0:  # Log progress every 50 jobs
+                    print(f"⏳ Processed {processed_count}/{total_jobs} jobs...")
+                
                 last_build = job.get("lastBuild")
                 last_successful = job.get("lastSuccessfulBuild")
                 last_failed = job.get("lastFailedBuild")
@@ -155,13 +294,16 @@ def get_all_jenkins_items(url, _auth, _bypass_cache=False):
                 # Get job description and parse ownership
                 job_description = job.get("description", "")
                 ownership_data = parse_pipeline_ownership(job_description)
+                
+                # Extract last editor from job configuration
+                last_editor = extract_editor_from_job(job, _auth)
 
                 items.append(
                     {
                         "name": job_name,
                         "url": job_url,
                         "type": job_class,
-                        "description": job_description,
+                        "description": ownership_data.get('description', job_description),
                         # Ownership data
                         "owner_name": ownership_data.get('owner_name'),
                         "owner_email": ownership_data.get('owner_email'),
@@ -191,12 +333,16 @@ def get_all_jenkins_items(url, _auth, _bypass_cache=False):
                         "max_build_duration": max_build_duration,
                         "total_build_duration": sum(build_durations) if build_durations else 0,
                         # User data
-                        "last_editor": last_editor,
                         "last_user": last_user,
+                        "last_editor": last_editor,
                     }
                 )
+        
+        print(f"✅ Completed processing {len(items)} total jobs")
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching data from {api_url}: {e}")
+        error_msg = f"❌ Error fetching data from {api_url}: {e}"
+        print(error_msg)
+        st.error(error_msg)
     return items
 
 
