@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
 import { 
   Activity, 
   BarChart3, 
@@ -18,6 +17,17 @@ import { SyncButton } from './components/dashboard/SyncButton';
 import { BuildDurationChart } from './components/analytics/BuildDurationChart';
 import { StatusDistributionChart } from './components/analytics/StatusDistributionChart';
 import { LoadingCard } from './components/ui/LoadingSpinner';
+
+// Mock toast for now since react-hot-toast is not installed
+const toast = {
+  success: (message: string) => console.log('Success:', message),
+  error: (message: string) => console.error('Error:', message),
+};
+
+// Mock Toaster component
+function Toaster({ position, toastOptions }: any) {
+  return null;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,7 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api_client } from '../lib/api';
 import type { JenkinsJob, DashboardStats } from '../types/jenkins';
-import toast from 'react-hot-toast';
+
+// Mock toast for now since react-hot-toast is not installed
+const toast = {
+  success: (message: string, options?: any) => console.log('Success:', message),
+  error: (message: string, options?: any) => console.error('Error:', message),
+};
 
 export const useJenkinsJobs = () => {
   return useQuery({
