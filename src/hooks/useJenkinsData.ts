@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api_client } from '../lib/api';
-import { JenkinsJob, DashboardStats } from '../types/jenkins';
+import type { JenkinsJob, DashboardStats } from '../types/jenkins';
 import toast from 'react-hot-toast';
 
 export const useJenkinsJobs = () => {

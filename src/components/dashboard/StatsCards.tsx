@@ -8,7 +8,7 @@ import {
   TestTube,
   Pause
 } from 'lucide-react';
-import { DashboardStats } from '../../types/jenkins';
+import type { DashboardStats } from '../../types/jenkins';
 import { formatDuration } from '../../lib/utils';
 
 interface StatsCardsProps {
