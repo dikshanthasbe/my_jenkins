@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Legend 
 } from 'recharts';
-import { JenkinsJob } from '../../types/jenkins';
+import type { JenkinsJob } from '../../types/jenkins';
 import { formatDuration } from '../../lib/utils';
 
 interface BuildDurationChartProps {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Filter, RotateCcw, Settings } from 'lucide-react';
 import { SearchInput } from '../ui/SearchInput';
 import { FilterDropdown } from '../ui/FilterDropdown';
-import { JenkinsJob } from '../../types/jenkins';
+import type { JenkinsJob } from '../../types/jenkins';
 
 interface FilterBarProps {
   jobs: JenkinsJob[];

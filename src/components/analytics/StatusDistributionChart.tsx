@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { JenkinsJob } from '../../types/jenkins';
+import type { JenkinsJob } from '../../types/jenkins';
 
 interface StatusDistributionChartProps {
   jobs: JenkinsJob[];

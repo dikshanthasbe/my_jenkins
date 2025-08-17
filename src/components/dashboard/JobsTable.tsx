@@ -19,7 +19,7 @@ import {
   Clock,
   Download
 } from 'lucide-react';
-import { JenkinsJob } from '../../types/jenkins';
+import type { JenkinsJob } from '../../types/jenkins';
 import { StatusBadge } from '../ui/StatusBadge';
 import { formatDate, formatDuration, formatRelativeTime, exportToCSV } from '../../lib/utils';
 
