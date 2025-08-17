@@ -166,13 +166,13 @@ function Dashboard() {
                   <div className="text-2xl font-bold text-primary-600">
                     {jobs.filter(job => job.success_rate > 90).length}
                   </div>
-                  <div className="text-sm text-gray-600">High Performing Jobs (>90%)</div>
+                  <div className="text-sm text-gray-600">High Performing Jobs ({'>'}90%)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-warning-600">
                     {jobs.filter(job => job.success_rate < 70 && job.success_rate > 0).length}
                   </div>
-                  <div className="text-sm text-gray-600">Needs Attention (<70%)</div>
+                  <div className="text-sm text-gray-600">Needs Attention ({'<'}70%)</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-600">
