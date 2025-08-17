@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import time
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 from src.data_manager import init_db, get_cached_data, cache_data
@@ -44,27 +45,34 @@ if df is None or df.empty or st.session_state.get('refresh_data', False):
 
     auth = HTTPBasicAuth(DashboardConfig.JENKINS_USER, DashboardConfig.JENKINS_TOKEN)
     
+    # Start timing
+    start_time = time.time()
+    
     with st.spinner("Fetching all jobs and pipelines... this may take a moment."):
-        # Clear cache if this is a refresh request to ensure fresh data
-        if st.session_state.get('refresh_data', False):
-            get_all_jenkins_items.clear()
-        
         # Suppress the function call display by using a try-except wrapper
         try:
-            # Pass bypass_cache=True when refreshing to ensure fresh data
-            bypass_cache = st.session_state.get('refresh_data', False)
-            all_items = get_all_jenkins_items(DashboardConfig.JENKINS_BASE_URL, auth, bypass_cache)
+            all_items = get_all_jenkins_items(DashboardConfig.JENKINS_BASE_URL, auth)
         except Exception as e:
             st.error(f"Error fetching data: {e}")
             st.stop()
     
         if all_items:
+            # Calculate timing
+            end_time = time.time()
+            fetch_duration = end_time - start_time
+            
             df = pd.DataFrame(all_items)
             cache_data(df)
             # Clear the refresh flag
             if 'refresh_data' in st.session_state:
                 del st.session_state.refresh_data
+            
+            # Enhanced logging for Kubernetes visibility
+            sync_message = f"✅ Successfully synced {len(df)} jobs from Jenkins in {fetch_duration:.2f} seconds"
+            print(sync_message)
+            
             st.success(f"✅ Successfully synced {len(df)} jobs from Jenkins!")
+            st.info(f"⏱️ Data fetched in {fetch_duration:.2f} seconds")
             st.info("🔄 Refreshing dashboard with latest data...")
             st.rerun()
         else:
