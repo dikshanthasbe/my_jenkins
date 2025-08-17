@@ -5,9 +5,8 @@ import {
   getSortedRowModel,
   getPaginationRowModel,
   useReactTable,
-  SortingState,
 } from '@tanstack/react-table';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { 
   ChevronUp, 
   ChevronDown, 
