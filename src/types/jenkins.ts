@@ -87,3 +87,15 @@ export interface SyncResponse {
   sync_duration: number;
   last_sync_time: string;
 }
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+export interface SyncResponse {
+  jobs_synced: number;
+  sync_duration: number;
+  last_sync_time: string;
+}
