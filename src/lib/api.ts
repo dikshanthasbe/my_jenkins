@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { JenkinsJob, DashboardStats, ApiResponse, SyncResponse } from '../types/jenkins';
+import { JenkinsJob, DashboardStats, SyncResponse } from '../types/jenkins';
+import type { ApiResponse } from '../types/jenkins';
 
 // Create axios instance with default config
 const api = axios.create({
