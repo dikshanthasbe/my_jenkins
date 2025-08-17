@@ -178,7 +178,7 @@ function Dashboard() {
                   <div className="text-2xl font-bold text-gray-600">
                     {jobs.filter(job => job.avg_build_duration > 600000).length}
                   </div>
-                  <div className="text-sm text-gray-600">Long Running Jobs (>10min)</div>
+                  <div className="text-sm text-gray-600">Long Running Jobs ({'>'}10min)</div>
                 </div>
               </div>
             </div>
